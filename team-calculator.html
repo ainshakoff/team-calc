@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Уровень команды</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --card: rgba(0,0,0,0.03);
+    --border: rgba(0,0,0,0.1);
+    --text-muted: rgba(0,0,0,0.4);
+    --font: 'Montserrat', sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 80px 16px 40px;
+    font-family: system-ui, sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(168,85,247,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* NAV */
+  .nav-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 14px 16px 10px;
+    background: linear-gradient(to bottom, #ffffff 70%, transparent);
+    display: flex; justify-content: center;
+  }
+  .nav-tabs {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; width: 100%; max-width: 520px;
+  }
+  .nav-tab {
+    padding: 10px 16px; border-radius: 12px;
+    border: 1px solid var(--border); background: transparent;
+    color: rgba(0,0,0,0.4);
+    font-family: var(--font); font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .nav-tab:hover { border-color: rgba(0,0,0,0.2); color: rgba(0,0,0,0.7); }
+  .nav-tab.active { border-color: rgba(0,0,0,0.2); background: rgba(0,0,0,0.06); color: #000; }
+
+  /* PAGES */
+  .page { width: 100%; max-width: 520px; position: relative; z-index: 1; display: none; flex-direction: column; gap: 12px; }
+  .page.active { display: flex; }
+
+  /* HEADER */
+  .header { text-align: center; margin-bottom: 20px; animation: fadeDown 0.6s ease both; }
+  .badge {
+    display: inline-block; font-family: var(--font); font-size: 10px;
+    letter-spacing: 5px; color: rgba(0,0,0,0.45); text-transform: uppercase;
+    margin-bottom: 12px; padding: 6px 16px;
+    border: 1px solid var(--border); border-radius: 100px;
+  }
+  h1 { font-family: var(--font); font-size: clamp(22px, 5vw, 30px); font-weight: 900; color: #111; letter-spacing: 2px; margin-bottom: 8px; line-height: 1.2; }
+  .subtitle { color: rgba(0,0,0,0.45); font-size: 13px; }
+
+  /* PILOT CARD */
+  .pilot-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .pilot-card:nth-child(2) { animation-delay: 0.1s; }
+  .pilot-card:nth-child(3) { animation-delay: 0.2s; }
+  .pilot-card:nth-child(4) { animation-delay: 0.3s; }
+  .card-top-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: rgba(0,0,0,0.07); transition: background 0.5s ease; }
+  .pilot-label { font-family: var(--font); font-size: 11px; letter-spacing: 3px; color: rgba(0,0,0,0.45); text-transform: uppercase; margin-bottom: 16px; }
+  .class-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .class-btn {
+    padding: 10px 4px; border-radius: 10px;
+    border: 1.5px solid rgba(0,0,0,0.1); background: rgba(0,0,0,0.02);
+    color: rgba(0,0,0,0.45); font-family: var(--font); font-weight: 700;
+    font-size: 14px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 1px;
+  }
+  .class-btn:hover { border-color: rgba(0,0,0,0.2); color: rgba(0,0,0,0.8); transform: scale(1.05); }
+  .class-btn.active { transform: scale(1.05); }
+  .pilot-score-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; opacity: 0; transition: opacity 0.3s ease; }
+  .pilot-score-row.visible { opacity: 1; }
+  .coeff-label { font-size: 12px; color: rgba(0,0,0,0.35); font-family: monospace; }
+  .coeff-value { font-family: var(--font); font-size: 16px; font-weight: 700; transition: color 0.3s; }
+
+  /* RESULT */
+  .result-card {
+    background: rgba(0,0,0,0.02); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px;
+    position: relative; overflow: hidden; transition: all 0.5s ease;
+    animation: fadeUp 0.5s 0.4s ease both;
+  }
+  .result-glow { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s ease; }
+  .result-main { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; position: relative; z-index: 1; }
+  .score-label { font-family: var(--font); font-size: 10px; letter-spacing: 3px; color: rgba(0,0,0,0.45); text-transform: uppercase; margin-bottom: 6px; }
+  .score-value { font-family: var(--font); font-size: clamp(36px, 8vw, 52px); font-weight: 900; color: rgba(0,0,0,0.15); line-height: 1; transition: color 0.4s ease; }
+  .league-block { text-align: right; opacity: 0; transition: opacity 0.4s ease; }
+  .league-block.visible { opacity: 1; }
+  .league-label { font-family: var(--font); font-size: 10px; letter-spacing: 3px; color: rgba(0,0,0,0.45); margin-bottom: 6px; text-transform: uppercase; }
+  .league-name { font-family: var(--font); font-size: clamp(18px, 4vw, 24px); font-weight: 900; letter-spacing: 1px; transition: color 0.4s ease; }
+  .progress-wrap { position: relative; z-index: 1; height: 4px; background: rgba(0,0,0,0.08); border-radius: 100px; overflow: hidden; margin-bottom: 10px; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 100px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease; background: linear-gradient(90deg,#3b82f6,#a855f7); }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font); color: rgba(0,0,0,0.3); letter-spacing: 1px; position: relative; z-index: 1; }
+  .progress-labels span:nth-child(2) { color: rgba(0,0,0,0.5); }
+  .hint { margin-top: 16px; text-align: center; font-size: 12px; color: rgba(0,0,0,0.3); font-family: var(--font); letter-spacing: 2px; }
+  .reset-btn {
+    width: 100%; padding: 12px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+    color: rgba(0,0,0,0.35); font-family: var(--font); font-size: 11px;
+    letter-spacing: 3px; cursor: pointer; text-transform: uppercase;
+    transition: all 0.2s ease; display: none;
+  }
+  .reset-btn:hover { border-color: rgba(0,0,0,0.2); color: rgba(0,0,0,0.6); }
+  .reset-btn.visible { display: block; }
+
+  /* ===== INFO PAGE ===== */
+  .info-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .info-section:nth-child(2) { animation-delay: 0.1s; }
+  .info-section:nth-child(3) { animation-delay: 0.2s; }
+  .info-section:nth-child(4) { animation-delay: 0.3s; }
+  .info-section-title { font-family: var(--font); font-size: 10px; letter-spacing: 4px; color: rgba(0,0,0,0.45); text-transform: uppercase; margin-bottom: 20px; }
+
+  .club-time-marker {
+    background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.08);
+    border-left: 3px solid rgba(0,0,0,0.25);
+    border-radius: 0 10px 10px 0; padding: 10px 14px; margin-bottom: 20px;
+    font-size: 12px; color: rgba(0,0,0,0.45); font-family: monospace;
+  }
+  .club-time-marker strong { color: rgba(0,0,0,0.8); font-family: var(--font); font-size: 11px; letter-spacing: 1px; }
+
+  .class-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .class-row:last-child { margin-bottom: 0; }
+  .class-badge { font-family: var(--font); font-weight: 900; font-size: 15px; width: 26px; text-align: center; flex-shrink: 0; }
+  .class-bar-wrap { flex: 1; }
+  .class-bar-bg { height: 6px; background: rgba(0,0,0,0.07); border-radius: 100px; overflow: hidden; margin-bottom: 5px; }
+  .class-bar-fill { height: 100%; border-radius: 100px; }
+  .class-row-meta { display: flex; justify-content: space-between; font-size: 11px; font-family: monospace; }
+  .lap-time { color: rgba(0,0,0,0.5); }
+  .handicap { color: rgba(0,0,0,0.35); }
+  .handicap b { color: rgba(0,0,0,0.6); font-weight: normal; }
+
+  .league-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .league-tile { border-radius: 12px; padding: 18px; text-align: center; }
+  .league-tile-name { font-family: var(--font); font-size: 20px; font-weight: 900; letter-spacing: 2px; margin-bottom: 4px; }
+  .league-tile-desc { font-size: 11px; opacity: 0.55; font-family: monospace; }
+
+  .info-box {
+    background: rgba(0,0,0,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 18px;
+    font-size: 13px; color: rgba(0,0,0,0.5); line-height: 1.75;
+  }
+  .info-box strong { color: rgba(0,0,0,0.8); font-family: var(--font); font-size: 11px; letter-spacing: 1px; }
+
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-calc" onclick="showPage('calc',this)">⬡ Калькулятор</button>
+    <button class="nav-tab"        id="tab-info" onclick="showPage('info',this)">◎ Классы</button>
+  </div>
+</div>
+
+<!-- CALC PAGE -->
+<div class="page active" id="page-calc">
+
+  <div class="header">
+    <div class="badge">Motorsport · Team Calculator</div>
+    <h1>УРОВЕНЬ КОМАНДЫ</h1>
+    <p class="subtitle">Выберите класс каждого пилота команды</p>
+  </div>
+
+  <div class="pilot-card" id="card-0">
+    <div class="card-top-line" id="line-0"></div>
+    <div class="pilot-label">◈ Пилот 1</div>
+    <div class="class-grid" id="grid-0"></div>
+    <div class="pilot-score-row" id="row-0">
+      <span class="coeff-label">Коэффициент</span>
+      <span class="coeff-value" id="coeff-0">+0</span>
+    </div>
+  </div>
+
+  <div class="pilot-card" id="card-1">
+    <div class="card-top-line" id="line-1"></div>
+    <div class="pilot-label">◈ Пилот 2</div>
+    <div class="class-grid" id="grid-1"></div>
+    <div class="pilot-score-row" id="row-1">
+      <span class="coeff-label">Коэффициент</span>
+      <span class="coeff-value" id="coeff-1">+0</span>
+    </div>
+  </div>
+
+  <div class="pilot-card" id="card-2">
+    <div class="card-top-line" id="line-2"></div>
+    <div class="pilot-label">◈ Пилот 3</div>
+    <div class="class-grid" id="grid-2"></div>
+    <div class="pilot-score-row" id="row-2">
+      <span class="coeff-label">Коэффициент</span>
+      <span class="coeff-value" id="coeff-2">+0</span>
+    </div>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <div class="result-glow" id="result-glow"></div>
+    <div class="result-main">
+      <div>
+        <div class="score-label">Score команды</div>
+        <div class="score-value" id="score-display">—</div>
+      </div>
+      <div class="league-block" id="league-block">
+        <div class="league-label">Лига</div>
+        <div class="league-name" id="league-name">—</div>
+      </div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-labels">
+      <span>0</span>
+      <span>◆ 100 — порог лиги</span>
+      <span>155.7</span>
+    </div>
+    <div class="hint" id="hint">ВЫБЕРИТЕ ВСЕХ ПИЛОТОВ</div>
+  </div>
+
+  <button class="reset-btn" id="reset-btn" onclick="resetAll()">↺ Сбросить</button>
+</div>
+
+<!-- INFO PAGE -->
+<div class="page" id="page-info">
+
+  <div class="header">
+    <div class="badge">Motorsport · Driver Classes</div>
+    <h1>КЛАССЫ ПИЛОТОВ</h1>
+    <p class="subtitle">Прогресс, время круга и гандикап</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-section-title">◈ Прогресс по классам</div>
+    <div class="club-time-marker">
+      <strong>Клубное время</strong> &nbsp;·&nbsp; 37.8 сек — нижняя граница класса D
+    </div>
+    <div id="class-rows"></div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-section-title">◈ Лиги</div>
+    <div class="league-split">
+      <div class="league-tile" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);">
+        <div class="league-tile-name" style="color:#3b82f6;">Sport</div>
+        <div class="league-tile-desc">Score ≤ 100</div>
+      </div>
+      <div class="league-tile" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);">
+        <div class="league-tile-name" style="color:#a855f7;">Pro</div>
+        <div class="league-tile-desc">Score > 100</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-section-title">◎ Как считается Score</div>
+    <div class="info-box">
+      Уровень команды определяется как <strong>сумма коэффициентов</strong> трёх пилотов в составе команды. Полученное значение называется <strong>Score команды</strong> — он же общий стартовый гандикап.<br><br>
+      Стартовый гандикап исчисляется от самой слабой команды <strong>NNN</strong> (Score = 0). Команда с бо́льшим Score стартует позже — гандикап в секундах равен Score команды.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const CLASSES = [
+    { id:"N", value:0,    color:"#6b7280", lapTime:39.0, handicap:0  },
+    { id:"D", value:14.3, color:"#3b82f6", lapTime:37.8, handicap:14 },
+    { id:"C", value:26.5, color:"#10b981", lapTime:36.8, handicap:27 },
+    { id:"B", value:36.5, color:"#f59e0b", lapTime:36.0, handicap:37 },
+    { id:"A", value:45.4, color:"#ef4444", lapTime:35.3, handicap:45 },
+    { id:"S", value:51.9, color:"#a855f7", lapTime:34.8, handicap:52 },
+  ];
+  const MAX_SCORE = 155.7, THRESHOLD = 100;
+  let selected = [null, null, null];
+
+  // Build pilot grids
+  for (let i = 0; i < 3; i++) {
+    const grid = document.getElementById('grid-'+i);
+    CLASSES.forEach((cls, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'class-btn';
+      btn.textContent = cls.id;
+      btn.onclick = () => selectClass(i, idx);
+      grid.appendChild(btn);
+    });
+  }
+
+  // Build info class rows
+  const LAP_MIN = 34.8, LAP_MAX = 39.0;
+  const rowsEl = document.getElementById('class-rows');
+  CLASSES.forEach(cls => {
+    const pct = Math.round(((LAP_MAX - cls.lapTime) / (LAP_MAX - LAP_MIN)) * 75 + 25);
+    const div = document.createElement('div');
+    div.className = 'class-row';
+    div.innerHTML = `
+      <span class="class-badge" style="color:${cls.color}">${cls.id}</span>
+      <div class="class-bar-wrap">
+        <div class="class-bar-bg">
+          <div class="class-bar-fill" style="width:${pct}%;background:${cls.color};box-shadow:0 0 8px ${cls.color}66;"></div>
+        </div>
+        <div class="class-row-meta">
+          <span class="lap-time">⏱ ${cls.lapTime.toFixed(1)} сек</span>
+          <span class="handicap">гандикап <b>+${cls.handicap} сек</b></span>
+        </div>
+      </div>`;
+    rowsEl.appendChild(div);
+  });
+
+  function showPage(name, tab) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('page-'+name).classList.add('active');
+    tab.classList.add('active');
+  }
+
+  function selectClass(pilotIdx, clsIdx) {
+    const cls = CLASSES[clsIdx];
+    selected[pilotIdx] = cls;
+    const grid = document.getElementById('grid-'+pilotIdx);
+    grid.querySelectorAll('.class-btn').forEach((btn, i) => {
+      const active = i === clsIdx;
+      btn.classList.toggle('active', active);
+      btn.style.borderColor = active ? cls.color : 'rgba(255,255,255,0.07)';
+      btn.style.background  = active ? cls.color+'22' : 'rgba(255,255,255,0.02)';
+      btn.style.color       = active ? cls.color : 'rgba(255,255,255,0.4)';
+      btn.style.boxShadow   = active ? `0 0 14px ${cls.color}44` : 'none';
+    });
+    document.getElementById('line-'+pilotIdx).style.background =
+      `linear-gradient(90deg,transparent,${cls.color},transparent)`;
+    const row = document.getElementById('row-'+pilotIdx);
+    row.classList.add('visible');
+    const coeff = document.getElementById('coeff-'+pilotIdx);
+    coeff.textContent = '+'+cls.value.toFixed(1);
+    coeff.style.color = cls.color;
+    updateResult();
+  }
+
+  function updateResult() {
+    const allSelected = selected.every(Boolean);
+    const score = selected.reduce((s,p) => s+(p?p.value:0), 0);
+    const sd   = document.getElementById('score-display');
+    const pf   = document.getElementById('progress-fill');
+    const hint = document.getElementById('hint');
+    const rc   = document.getElementById('result-card');
+    const rg   = document.getElementById('result-glow');
+    const lb   = document.getElementById('league-block');
+    const ln   = document.getElementById('league-name');
+    const rb   = document.getElementById('reset-btn');
+
+    if (allSelected) {
+      const isPro = score > THRESHOLD;
+      const col  = isPro ? '#a855f7' : '#3b82f6';
+      const pct  = Math.min((score/MAX_SCORE)*100, 100);
+      sd.textContent = score.toFixed(1); sd.style.color = '#111';
+      pf.style.width = pct+'%'; pf.style.background = `linear-gradient(90deg,#3b82f6,${col})`; pf.style.boxShadow = `0 0 8px ${col}`;
+      lb.classList.add('visible');
+      ln.textContent = isPro ? 'Pro' : 'Sport'; ln.style.color = col;
+      rc.style.background  = `linear-gradient(135deg,${col}11,rgba(255,255,255,0.02))`;
+      rc.style.borderColor = col+'44';
+      rg.style.background  = `radial-gradient(ellipse at 50% 0%,${col}0a,transparent 70%)`; rg.style.opacity='1';
+      hint.style.display = 'none'; rb.classList.add('visible');
+    } else {
+      sd.textContent='—'; sd.style.color='rgba(0,0,0,0.15)';
+      pf.style.width='0%'; lb.classList.remove('visible');
+      rc.style.background='rgba(255,255,255,0.02)'; rc.style.borderColor='rgba(255,255,255,0.08)';
+      rg.style.opacity='0'; hint.style.display=''; rb.classList.remove('visible');
+    }
+  }
+
+  function resetAll() {
+    selected=[null,null,null];
+    for (let i=0;i<3;i++){
+      document.getElementById('grid-'+i).querySelectorAll('.class-btn').forEach(b=>{
+        b.classList.remove('active');
+        b.style.borderColor='rgba(0,0,0,0.1)';
+        b.style.background='rgba(0,0,0,0.02)';
+        b.style.color='rgba(0,0,0,0.45)';
+        b.style.boxShadow='none';
+      });
+      document.getElementById('line-'+i).style.background='rgba(0,0,0,0.07)';
+      document.getElementById('row-'+i).classList.remove('visible');
+    }
+    updateResult();
+  }
+</script>
+</body>
+</html>
